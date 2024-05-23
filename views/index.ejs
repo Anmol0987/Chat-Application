@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang='en'>
+
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <title>Bootstrap demo</title>
+  <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css' rel='stylesheet' integrity='sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi' crossorigin='anonymous'>
+
+  <style>
+    * {
+      margin: 0%;
+      padding: 0%;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      width: 100%;
+    }
+
+    #main>.right {
+      display: none;
+    }
+
+    .userImage {
+      height: 3rem;
+      width: 3rem;
+      border-radius: 50%;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    a {
+      margin: 0;
+    }
+
+    .chat h4,
+    .chat p {
+      line-height: 1.2rem;
+    }
+
+    .msg {
+      width: fit-content;
+    }
+
+    .conversationArea {
+      height: 79vh;
+    }
+
+    .right .top {
+      height: 13vh;
+    }
+
+    .right .bottom {
+      height: 8vh;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div id="main" class="w-100 h-100 d-flex">
+
+    <div class="left col-3 h-100 bg-success ">
+
+      <div class="top mb-3">
+        <div class="user d-flex gap-2 align-items-center p-2 text-light bg-secondary">
+          <img class="userImage" src="<%= user.img %>" alt="">
+          <h3> <%= user.username %> </h3>
+        </div>
+      </div>
+
+
+      <div class="bottom border-top chats">
+
+
+      </div>
+
+
+    </div>
+    <div class="right col-9 bg-dark">
+
+      <div class="top bg-secondary text-light">
+        <div class="currentChatUser p-2">
+          <div class="user d-flex gap-2 align-items-center">
+            <img id="currentChatUserImage" src="https://images.unsplash.com/photo-1682687220945-922198770e60?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxlZGl0b3JpYWwtZmVlZHwxfHx8ZW58MHx8fHx8" class="userImage"></img>
+            <h4 id="currentChatUserUsername">Username</h4>
+          </div>
+        </div>
+      </div>
+      <div class="conversationArea w-100 p-2">
+        <div class="msg incomingMessage  rounded-2  p-2">
+        </div>
+
+      </div>
+
+      <div class="bottom d-flex">
+        <input id="message" type="text" class="form-control" placeholder="Enter message">
+        <button onclick="sendMessage()" class="btn btn-success">send</button>
+      </div>
+
+    </div>
+
+  </div>
+  <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js' integrity='sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3' crossorigin='anonymous'></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var currentChatUserId = null
+    var socket = io();
+    socket.emit('join-server', '<%= user.username %>')
+
+    // socket.on('newUserJoined', msg => {
+    //   appendNewChat(msg.img, msg.username, msg.lastMessage)
+    // })
+
+
+    socket.on('newUserJoined', msg => {
+      appendNewChat(msg.img, msg.username, msg.lastMessage, msg.id)
+    })
+
+
+    function appendNewChat(img, username, lastMessage, chatId) {
+
+      if (!document.querySelector(`#shery_${chatId}`)) {
+        const template = `<div id="shery_${chatId}" onclick="setCurrentChat('${img}','${username}','${chatId}')" class="chat d-flex p-2 bg-light gap-2">
+          <div class="left">
+            <img class="userImage" src="${img}" alt="">
+            </div>
+            <div class="right">
+              <h4>${username}</h4>
+              <p>${lastMessage}</p>
+              </div>
+        </div>`
+        document.querySelector('.chats').innerHTML += template
+      }
+
+    }
+
+    function sendMessage() {
+      const msgValue = document.querySelector('#message').value
+      // ye return krdega agar message empty string hai toh
+      if (!msgValue)
+        return
+      const template = `<div class="msg outgoingMessage ms-auto bg-light rounded-2  p-2">
+          ${msgValue}
+        </div>`
+
+      document.querySelector('.conversationArea').innerHTML += template
+
+      const msg = {
+        msg: msgValue,
+        toUser: currentChatUserId
+      }
+
+      socket.emit('privateMessage', msg)
+
+      document.querySelector('#message').value = ""
+    }
+    
+
+    function putIncomingMessage(msg) {
+      if (!msg)
+        return
+      const template = `<div class="msg incomingMessage bg-light rounded-2  p-2">
+          ${msg}
+        </div>`
+      document.querySelector('.conversationArea').innerHTML += template
+    }
+
+    function setCurrentChat(img, username, userId) {
+      document.querySelector('#currentChatUserImage').setAttribute('src', img)
+      document.querySelector('#currentChatUserUsername').textContent = username
+      document.querySelector('#main > .right').classList.add('d-block')
+      currentChatUserId = userId
+    }
+
+    socket.on('recPvt',function (msg){
+      putIncomingMessage(msg)
+    })
+  </script>
+</body>
+
+</html>
